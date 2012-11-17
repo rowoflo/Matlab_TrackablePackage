@@ -1,13 +1,13 @@
-function quat = rot2quat(rot)
-% The "rot2quat" function converts a rotation matrix to a quaterion.
+function quat = euler2quat(euler)
+% The "euler2quat" function converts a set of Euler angles to a quaterion.
 %
-% SYNTAX:
-%   quat = trackable.rot2quat(rot)
-%   quat = trackable.rot2quat(rot,'PropertyName',PropertyValue,...)
+% SYNTAX: TODO: Add syntax
+%   quat = trackable.euler2quat(euler)
+%   quat = trackable.euler2quat(euler,'PropertyName',PropertyValue,...)
 % 
 % INPUTS:
-%   rot - (3 x 3 number) 
-%       A standard rotation matrix that is in SO(3).
+%   euler - (3 x 1 number) 
+%       Euler angles [phi; theta; psi] for the given quaterion.
 %
 % PROPERTIES: TODO: Add properties
 %   'propertiesName' - (size type) [defaultPropertyValue]
@@ -18,30 +18,21 @@ function quat = rot2quat(rot)
 %       Is a normalized quaterion. With components quat = [a;b;c;d] from
 %       the form quat = a + bi + cj + dk and norm(quat) = 1.
 %
-% EXAMPLES:
-%     trackable.rot2quat(eye(3))
-% 
-%     ans =
-% 
-%          1
-%          0
-%          0
-%          0
-%
+% EXAMPLES: TODO: Add examples
 %
 % NOTES:
-%   See http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+%   See http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 %
 % NECESSARY FILES:
 %
 % SEE ALSO:
-%    trackable.quat2rot | trackable.euler2quat | trackable.quat2euler
+%    trackable.quat2euler | trackable.quat2rot | trackable.rot2quat
 %
 % AUTHOR:
 %    Rowland O'Flaherty (www.rowlandoflaherty.com)
 %
 % VERSION: 
-%   Created 03-NOV-2012
+%   Created 14-NOV-2012
 %-------------------------------------------------------------------------------
 
 %% Check Inputs
@@ -49,21 +40,17 @@ function quat = rot2quat(rot)
 % Check number of inputs
 narginchk(1,1)
 
-% Check input arguments for errors
-assert(isnumeric(rot) && isreal(rot) && isequal(size(rot),[3,3]),...
-    'trackable.rot2quat:rot',...
-    'Input argument "rot" must be a 3 x 3 matrix of real numbers in SO(3).')
-
-if norm(rot'*rot - eye(3)) > .01
-    warning('trackable:quat2rot:rot',...
-        'Input argument "rot" is not very close to SO(3).')
-end
+% Check input arguments for errors TODO: Add error checks
+assert(isnumeric(euler) && isreal(euler) && numel(euler) == 3,...
+    'trackable:euler2quat:euler',...
+    'Input argument "euler" must be a 3 x 1 vector of real numbers.')
+euler = euler(:);
 
 % % Get and check properties
 % propargin = size(varargin,2);
 % 
 % assert(mod(propargin,2) == 0,...
-%     'rot2quat:properties',...
+%     'trackable:euler2quat:properties',...
 %     'Properties must come in pairs of a "PropertyName" and a "PropertyValue".')
 % 
 % propStrs = varargin(1:2:propargin);
@@ -74,7 +61,7 @@ end
 %         case lower('propertyName')
 %             propertyName = propValues{iParam};
 %         otherwise
-%             error('rot2quat:options',...
+%             error('trackable:euler2quat:options',...
 %               'Option string ''%s'' is not recognized.',propStrs{iParam})
 %     end
 % end
@@ -84,18 +71,16 @@ end
 % 
 % % Check property values for errors TODO: Add property error checks
 % assert(isnumeric(propertyName) && isreal(propertyName) && isequal(size(propertyName),[1,1]),...
-%     'rot2quat:propertyName',...
+%     'trackable:euler2quat:propertyName',...
 %     'Property "propertyName" must be a ? x ? matrix of real numbers.')
 
-%% Convert from rotation matrix to quaterion
-t = trace(rot);
-r = sqrt(1+t);
-s = 0.5/r;
-w = 0.5*r;
-x = (rot(3,2)-rot(2,3))*s;
-y = (rot(1,3)-rot(3,1))*s;
-z = (rot(2,1)-rot(1,2))*s;
+%% Conver from Euler angles to quaterion
+phi = euler(1); theta = euler(2); psi = euler(3);
 
-quat = [w x y z]';
+a = cos(phi/2)*cos(theta/2)*cos(psi/2) + sin(phi/2)*sin(theta/2)*sin(psi/2);
+b = sin(phi/2)*cos(theta/2)*cos(psi/2) - cos(phi/2)*sin(theta/2)*sin(psi/2);
+c = cos(phi/2)*sin(theta/2)*cos(psi/2) + sin(phi/2)*cos(theta/2)*sin(psi/2);
+d = cos(phi/2)*cos(theta/2)*sin(psi/2) - sin(phi/2)*sin(theta/2)*cos(psi/2);
 
+quat = [a b c d]';
 end

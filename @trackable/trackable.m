@@ -56,6 +56,7 @@ end
 
 properties (Dependent = true, SetAccess = private)
     transform % (3 x 4 number) Homogeneous tranform matrix of current position and orientation.
+    euler % (3 x 1 number) Euler angle representation of current orientation.
 end
 
 properties (Access = public)
@@ -388,16 +389,45 @@ methods
         %       Homogenous transform matrix.
         %
         % NOTES:
+        %   See http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
         %
         %-----------------------------------------------------------------------
         
         p = trackableObj.position;
         q = trackableObj.orientation;
-        a = q(1); b = q(2); c = q(3); d = q(4);
-        r = [a^2+b^2-c^2-d^2    2*b*c-2*a*d     2*b*d+2*a*c;...
-             2*b*c+2*a*d        a^2-b^2+c^2-d^2 2*c*d-2*a*b;...
-             2*b*d-2*a*c        2*c*d+2*a*b     a^2-b^2-c^2+d^2];
+        r = trackable.quat2rot(q);
+        % a = q(1); b = q(2); c = q(3); d = q(4);
+        % r = [a^2+b^2-c^2-d^2    2*b*c-2*a*d     2*b*d+2*a*c;...
+        %      2*b*c+2*a*d        a^2-b^2+c^2-d^2 2*c*d-2*a*b;...
+        %      2*b*d-2*a*c        2*c*d+2*a*b     a^2-b^2-c^2+d^2];
         transform = [r p];
+    end
+    
+    function euler = get.euler(trackableObj)
+        % Overloaded query operator function for the "euler" property.
+        %
+        % SYNTAX:
+        %	  euler = trackableObj.euler
+        %
+        % OUTPUT:
+        %   euler - (3 x 1 number)
+        %       Euler angles of current orientation.
+        %
+        % NOTES:
+        %   See http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        %
+        %-----------------------------------------------------------------------
+        
+        q = trackableObj.orientation;
+        euler = trackable.quat2euler(q);
+        
+        % a = q(1); b = q(2); c = q(3); d = q(4);
+        % 
+        % phi = atan2(2*(a*b+c*d),1-2*(b^2+c^2));
+        % theta = asin(2*(a*b-d*c));
+        % psi = atan2(2*(a*d+b*c),1-2*(c^2+d^2));
+        % 
+        % euler = [phi theta psi]';
     end
     
     function timeTape = get.timeTape(trackableObj)
