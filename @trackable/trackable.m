@@ -7,8 +7,8 @@ classdef trackable < handle
 %   To get more information on this class type "doc trackable.trackable" into the
 %   command window.
 %
-% NECESSARY FILES AND/OR PACKAGES: TODO: Add necessary files
-%   +trackable, someFile.m
+% NECESSARY FILES AND/OR PACKAGES:
+%   +trackable, quaternion.m
 %
 % SEE ALSO: TODO: Add see alsos
 %    relatedFunction1 | relatedFunction2
@@ -39,24 +39,28 @@ properties (Access = public, Hidden = true)
     graphicsHandles = [] % (? x 1 graphics objects) Graphics handles for plot
 end
 
-properties (Access = protected, Hidden = true)
+properties (Access = private, Hidden = true)
     timeRaw_ = nan % (1 x 1 number) Raw time data
     timeOffset_ = 0 % (1 x 1 number) Time offset
-    positionRaw_ = nan(3,1); % (3 x 1 number) Raw position data
+    positionRaw_ = nan(3,1) % (3 x 1 number) Raw position data
     positionOffset_ = zeros(3,1) % (3 x 1 number) Position offset
-    orientationRaw_ = nan(4,1) % (4 x 1 number) Raw orientation data
-    orientationOffset_ = [1;0;0;0] % (4 x 1 number) Orientation offset
+    orientationRaw_ = quaternion(nan(4,1)) % (1 x 1 quaternion) Raw orientation data
+    orientationOffset_ = quaternion([1;0;0;0]) % (1 x 1 quaternion) Orientation offset
 end
 
 properties (Dependent = true, SetAccess = public)
     time % (1 x 1 number) Current time
     position % (3 x 1 number) Current position. Cartesian (x,y,z)
-    orientation % (4 x 1 number) Current orientation. Quaterion (a,b,c,d)
+    orientation % (1 x 1 quaternion) Current orientation.
+end
+
+properties (GetAccess = public, SetAccess = private)
+    velocity = nan(3,1) % (3 x 1 number) Current velocity
+    angularVelocity = nan(3,1) % (3 x 1 number) Current angular velocity
 end
 
 properties (Dependent = true, SetAccess = private)
-    transform % (3 x 4 number) Homogeneous tranform matrix of current position and orientation.
-    euler % (3 x 1 number) Euler angle representation of current orientation.
+    transform % (4 x 4 number) Homogeneous tranform matrix of current position and orientation.
 end
 
 properties (Access = public)
@@ -68,15 +72,16 @@ properties (GetAccess = public, SetAccess = private)
 end
 
 properties (GetAccess = public, SetAccess = private, Hidden = true)
-    timeTapeVec = nan(1,0) % (1 x ?) Recording of update times.
-    positionTapeVec = nan(3,0) % (3 x ?) Recording of past positions.
-    orientationTapeVec = nan(4,0) % (4 x ?) Recording of past orientations.
+    timeTapeVec = nan(1,0) % (1 x ? number) Recording of update times.
+    positionTapeVec = nan(3,0) % (3 x ? number) Recording of past positions.
+    orientationTapeVec = quaternion.empty(1,0) % (1 x ? quaternion) Recording of past orientations.
+    velocityTapeVec = nan(3,0) % (3 x ? number) Recording of past velocities.
 end
 
 properties (Dependent = true, SetAccess = private)
-    timeTape % (1 x ?) Recording of update times.
-    positionTape % (3 x ?) Recording of past positions.
-    orientationTape % (4 x ?) Recording of past orientations.
+    timeTape % (1 x ? number) Recording of update times.
+    positionTape % (3 x ? number) Recording of past positions.
+    orientationTape % (1 x ? quaternion) Recording of past orientations.
 end
 
 properties (Dependent = true, SetAccess = private, Hidden = true)
@@ -210,6 +215,7 @@ methods
             'trackable:trackable:set:time',...
             'Property "time" must be set to a 1 x 1 real number.')
         
+        % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
         if tapeFlag
             trackableObj.tapeFlag = 'Off';
@@ -219,7 +225,7 @@ methods
             tapeFlag = 'Off';
         end
         trackableObj.update();
-        trackableObj.tapeFlag = tapeFlag;
+        trackableObj.tapeFlag = tapeFlag; % Reset tapeFlag
         
         if isnan(trackableObj.timeRaw_)
             trackableObj.timeRaw_ = time;
@@ -247,6 +253,7 @@ methods
             'Property "position" must be set to a 3 x 1 real number.')
         position = position(:);
         
+        % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
         if tapeFlag
             trackableObj.tapeFlag = 'Off';
@@ -256,7 +263,7 @@ methods
             tapeFlag = 'Off';
         end
         trackableObj.update();
-        trackableObj.tapeFlag = tapeFlag;
+        trackableObj.tapeFlag = tapeFlag; % Reset tapeFlag
         
         if any(isnan(trackableObj.positionRaw_))
             trackableObj.positionRaw_ = position;
@@ -274,24 +281,29 @@ methods
         %   trackableObj.orientation = orientation
         %
         % INPUT:
-        %   orientation - (4 x 1 real number with the norm equal to 1)
+        %   orientation - (1 x 1 quaternion or 4 x 1 real number with the norm equal to 1)
         %
         % NOTES:
         %   A warning is displayed if the norm of the argument
-        %   "orientation" is greater than 0.01 from 1;
+        %   "orientation" is greater than 0.01 units from from 1;
         %
         %-----------------------------------------------------------------------
-        assert(isnumeric(orientation) && isreal(orientation) && numel(orientation) == 4,...
+        assert((isa(orientation,'quaternion') && numel(a) == 1 ) || ...
+            (isnumeric(orientation) && isreal(orientation) && numel(orientation) == 4),...
             'trackable:trackable:set:orientation',...
-            'Property "orientation" must be set to a 4 x 1 real number.')
-        orientation = orientation(:);
+            'Property "orientation" must be a 1 x 1 quaternion or a 4 x 1 real number.')
         
-        if abs(norm(orientation) - 1) > .01;
-            warning('trackable:trackable:set:orientation',...
-                'Property "orientation" norm is not very close to 1. (Norm = %.3f)',norm(orientation))
+        if ~isa(orientation,'quaternion')
+            orientation = orientation(:);
+            if abs(norm(orientation) - 1) > .01;
+                warning('trackable:trackable:set:orientation',...
+                    'Property "orientation" norm is not very close to 1. (Norm = %.3f)',norm(orientation))
+            end
+            orientation = orientation / norm(orientation);
+            orientation = quaternion(orientation);
         end
-        orientation = orientation / norm(orientation);
-
+        
+        % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
         if tapeFlag
             trackableObj.tapeFlag = 'Off';
@@ -301,20 +313,23 @@ methods
             tapeFlag = 'Off';
         end
         trackableObj.update();
-        trackableObj.tapeFlag = tapeFlag;
+        trackableObj.tapeFlag = tapeFlag; % Reset tapeFlag
         
-        if any(isnan(trackableObj.orientationRaw_))
+        if isnan(trackableObj.orientationRaw_)
             trackableObj.orientationRaw_ = orientation;
         end
         
-        q1 = trackableObj.orientationRaw_;
-        q1 = [ q1(1), q1(2), q1(3), q1(4);...
-              -q1(2), q1(1),-q1(4), q1(3);...
-              -q1(3), q1(4), q1(1),-q1(2);...
-              -q1(4),-q1(3), q1(2), q1(1)];
-        q2 = orientation;
-        q2 = [q2(1);-q2(2:4)];
-        trackableObj.orientationOffset_ = q1'*q2;
+        % q1 = trackableObj.orientationRaw_;
+        % q1 = [ q1(1), q1(2), q1(3), q1(4);...
+        %       -q1(2), q1(1),-q1(4), q1(3);...
+        %       -q1(3), q1(4), q1(1),-q1(2);...
+        %       -q1(4),-q1(3), q1(2), q1(1)];
+        % q2 = orientation;
+        % q2 = [q2(1);-q2(2:4)];
+        % trackableObj.orientationOffset_ = q1'*q2;
+        
+        trackableObj.orientationOffset_ = trackableObj.orientationRaw_ * conj(orientation);
+        
         if trackableObj.tapeFlag
             trackableObj.writeToTape();
         end
@@ -361,21 +376,26 @@ methods
         %	  orientation = trackableObj.orientation
         %
         % OUTPUT:
-        %   orientation - (4 x 1 number)
+        %   orientation - (1 x 1 quaternion)
         %       Orientation updated with offset.
         %
         % NOTES:
         %
         %-----------------------------------------------------------------------
         
-        q1 = trackableObj.orientationRaw_;
-        q1 = [ q1(1), q1(2), q1(3), q1(4);...
-              -q1(2), q1(1),-q1(4), q1(3);...
-              -q1(3), q1(4), q1(1),-q1(2);...
-              -q1(4),-q1(3), q1(2), q1(1)];
-        q2 = trackableObj.orientationOffset_;
-        q2 = [q2(1);-q2(2:4)];
-        orientation = q1'*q2;
+        % q1 = trackableObj.orientationRaw_;
+        % q1 = [ q1(1), q1(2), q1(3), q1(4);...
+        %       -q1(2), q1(1),-q1(4), q1(3);...
+        %       -q1(3), q1(4), q1(1),-q1(2);...
+        %       -q1(4),-q1(3), q1(2), q1(1)];
+        % q2 = trackableObj.orientationOffset_;
+        % q2 = [q2(1);-q2(2:4)];
+        % orientation = q1'*q2;
+        
+        orientation = trackableObj.orientationRaw_ * conj(trackableObj.orientationOffset_);
+%         if orientation.d < 0
+%             orientation = conj(orientation);
+%         end
     end
     
     function transform = get.transform(trackableObj)
@@ -385,7 +405,7 @@ methods
         %	  transform = trackableObj.transform
         %
         % OUTPUT:
-        %   transform - (3 x 4 number)
+        %   transform - (4 x 4 number)
         %       Homogenous transform matrix.
         %
         % NOTES:
@@ -395,39 +415,12 @@ methods
         
         p = trackableObj.position;
         q = trackableObj.orientation;
-        r = trackable.quat2rot(q);
+        r = rot(q);
         % a = q(1); b = q(2); c = q(3); d = q(4);
         % r = [a^2+b^2-c^2-d^2    2*b*c-2*a*d     2*b*d+2*a*c;...
         %      2*b*c+2*a*d        a^2-b^2+c^2-d^2 2*c*d-2*a*b;...
         %      2*b*d-2*a*c        2*c*d+2*a*b     a^2-b^2-c^2+d^2];
-        transform = [r p];
-    end
-    
-    function euler = get.euler(trackableObj)
-        % Overloaded query operator function for the "euler" property.
-        %
-        % SYNTAX:
-        %	  euler = trackableObj.euler
-        %
-        % OUTPUT:
-        %   euler - (3 x 1 number)
-        %       Euler angles of current orientation.
-        %
-        % NOTES:
-        %   See http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        %
-        %-----------------------------------------------------------------------
-        
-        q = trackableObj.orientation;
-        euler = trackable.quat2euler(q);
-        
-        % a = q(1); b = q(2); c = q(3); d = q(4);
-        % 
-        % phi = atan2(2*(a*b+c*d),1-2*(b^2+c^2));
-        % theta = asin(2*(a*b-d*c));
-        % psi = atan2(2*(a*d+b*c),1-2*(c^2+d^2));
-        % 
-        % euler = [phi theta psi]';
+        transform = [r p;[zeros(1,3) 1]];
     end
     
     function timeTape = get.timeTape(trackableObj)
@@ -553,39 +546,39 @@ methods (Access = public)
         validServer = trackableObj.validServer;
     end
     
-    function setTime(trackableObj,time)
-        % The "resetTime" method sets the time to the given value.
-        %
-        % SYNTAX:
-        %   trackableObj.resetTime()
-        %   trackableObj.resetTime(time) [0]
-        %   
-        %
-        % INPUTS:
-        %   trackableObj - (1 x 1 trackable.trackable)
-        %       An instance of the "trackable.trackable" class.
-        %
-        %   time - (1 x 1 number)
-        %       The value that the time will be set to.
-        %
-        % NOTES:
-        %
-        %-----------------------------------------------------------------------
-        
-        % Check number of arguments
-        narginchk(1,2)
-        
-        % Apply default values
-        if nargin < 2, time = 0; end
-        
-        % Check arguments for errors
-        assert(isnumeric(time) && isreal(time) && numel(time) == 1,...
-            'trackable:trackable:setTime:time',...
-            'Input argument "time" must scaler real valued number.')
-        
-        trackableObj.time0_ = toc(trackableObj.ticID) - time;
-        
-    end
+%     function setTime(trackableObj,time)
+%         % The "resetTime" method sets the time to the given value.
+%         %
+%         % SYNTAX:
+%         %   trackableObj.resetTime()
+%         %   trackableObj.resetTime(time) [0]
+%         %   
+%         %
+%         % INPUTS:
+%         %   trackableObj - (1 x 1 trackable.trackable)
+%         %       An instance of the "trackable.trackable" class.
+%         %
+%         %   time - (1 x 1 number)
+%         %       The value that the time will be set to.
+%         %
+%         % NOTES:
+%         %
+%         %-----------------------------------------------------------------------
+%         
+%         % Check number of arguments
+%         narginchk(1,2)
+%         
+%         % Apply default values
+%         if nargin < 2, time = 0; end
+%         
+%         % Check arguments for errors
+%         assert(isnumeric(time) && isreal(time) && numel(time) == 1,...
+%             'trackable:trackable:setTime:time',...
+%             'Input argument "time" must scaler real valued number.')
+%         
+%         trackableObj.time0_ = toc(trackableObj.ticID) - time;
+%         
+%     end
 end
 
 methods (Access = private)
@@ -619,7 +612,7 @@ methods (Access = private)
         if trackableObj.tapeLength + 1 > trackableObj.tapeVecSize % Increase vector size
             trackableObj.timeTapeVec = [trackableObj.timeTapeVec nan(1,trackableObj.tapeCatSize)];
             trackableObj.positionTapeVec = [trackableObj.positionTapeVec nan(3,trackableObj.tapeCatSize)];
-            trackableObj.orientationTapeVec = [trackableObj.orientationTapeVec nan(4,trackableObj.tapeCatSize)];
+            trackableObj.orientationTapeVec = [trackableObj.orientationTapeVec repmat(quaternion(nan(4,1)),1,trackableObj.tapeCatSize)];
         end
         trackableObj.tapeLength = trackableObj.tapeLength + 1;
         trackableObj.timeTapeVec(:,trackableObj.tapeLength) = time;
@@ -632,7 +625,7 @@ end
 %% Methods in separte files ----------------------------------------------------
 methods (Access = public)
     validate(trackableObj)
-    update(trackableObj)
+    update(trackableObj,timeRaw,positionRaw,orientationRaw)
     plot(trackableObj)
 end
 %-------------------------------------------------------------------------------
