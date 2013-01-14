@@ -186,7 +186,7 @@ methods
         %   trackableObj.tapeFlag = tapeFlag
         %
         % INPUT:
-        %   tapeFlag - (1 x 1 real number)
+        %   tapeFlag - (1 x 1 logical)
         %
         % NOTES:
         %
@@ -225,12 +225,11 @@ methods
         % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
         if tapeFlag
-            trackableObj.tapeFlag = 'Off';
             tapeFlag = 'On';
         else
-            trackableObj.tapeFlag = 'Off';
             tapeFlag = 'Off';
         end
+        trackableObj.tapeFlag = 'Off';
         trackableObj.settingFlag = true;
         trackableObj.update();
         trackableObj.settingFlag = false;
@@ -266,12 +265,11 @@ methods
         % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
         if tapeFlag
-            trackableObj.tapeFlag = 'Off';
             tapeFlag = 'On';
         else
-            trackableObj.tapeFlag = 'Off';
             tapeFlag = 'Off';
         end
+        trackableObj.tapeFlag = 'Off';
         trackableObj.settingFlag = true;
         trackableObj.update();
         trackableObj.settingFlag = false;
@@ -318,13 +316,12 @@ methods
         
         % Briefly turn off tape for this update
         tapeFlag = trackableObj.tapeFlag;
-        if tapeFlag
-            trackableObj.tapeFlag = 'Off';
+        if tapeFlag            
             tapeFlag = 'On';
         else
-            trackableObj.tapeFlag = 'Off';
             tapeFlag = 'Off';
         end
+        trackableObj.tapeFlag = 'Off';
         trackableObj.settingFlag = true;
         trackableObj.update();
         trackableObj.settingFlag = false;

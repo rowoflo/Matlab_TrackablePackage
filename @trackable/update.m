@@ -107,11 +107,18 @@ else
     trackableObj.positionRaw_ = positionRaw;
     trackableObj.orientationRaw_ = orientationRaw;
     
-    trackableObj.velocity = (trackableObj.positionRaw_ - posPrev) / (trackableObj.timeRaw_ - timePrev);
+    dt = trackableObj.timeRaw_ - timePrev;
+    dp = (trackableObj.positionRaw_ - posPrev);
+    dq = inv(oriPrev)*trackableObj.orientationRaw_; %#ok<MINV>
+    [de,dtheta] = quaternion.quat2axis(dq.a,dq.b,dq.c,dq.d);
+    if dtheta == 0
+        de = zeros(3,1);
+    end
+    de = real(de); 
     
-    dq = (trackableObj.orientationRaw_ - oriPrev) / (trackableObj.timeRaw_ - timePrev);
-    w = 2*dq*inv(trackableObj.orientationRaw_); %#ok<MINV>
-    trackableObj.angularVelocity = imag(w)';
+    trackableObj.velocity = dp / dt;
+    trackableObj.angularVelocity = de / dt;
+    
 end
 
 if trackableObj.tapeFlag
