@@ -50,6 +50,8 @@ properties (Access = private, Hidden = true)
     positionOffset_ = zeros(3,1) % (3 x 1 number) Position offset
     orientationRaw_ = quaternion(nan(4,1)) % (1 x 1 quaternion) Raw orientation data
     orientationOffset_ = quaternion([1;0;0;0]) % (1 x 1 quaternion) Orientation offset
+    orientationLocalCorrection_ = quaternion([0 0 1; 0 -1 0; 1 0 0]) % (1 x 1 quaternion) Used to realign local reference of trackable.
+    orientationGlobalCorrection_ = quaternion([0 0 1; 0 1 0; -1 0 0]) % (1 x 1 quaternion) Used to realign global of orientation reference frame with position refernce frame.
 end
 
 properties (Dependent = true, SetAccess = public)
@@ -68,6 +70,8 @@ properties (Dependent = true, SetAccess = private)
 end
 
 properties (Access = public)
+    coordScale = [1;1;1]; % (3 x 1 positive numbers) Scaling of raw coordinates (this is applied before coordinates are rotated to desired coordinates).
+    coordOrientation = quaternion(); % (1 x 1 quaternion) Orientation of desired coordinates in raw coordinates.
     tapeFlag = false % (1 x 1 logical) If true tape recorder is on.
 end
 
@@ -179,6 +183,45 @@ end
 
 %% Property Methods ------------------------------------------------------------
 methods
+    function trackableObj = set.coordScale(trackableObj,coordScale)  %#ok<*MCHV2>
+        % Overloaded assignment operator function for the "coordScale" property.
+        %
+        % SYNTAX:
+        %   trackableObj.coordScale = coordScale
+        %
+        % INPUT:
+        %   coordScale - (3 x 1 positive number)
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+        assert(isnumeric(coordScale) && isreal(coordScale) && numel(coordScale) == 3 && all(coordScale > 0),...
+            'trackable:trackable:set:coordScale',...
+            'Property "coordScale" must be set to a 3 x 1 positive number.')
+        coordScale = coordScale(:);
+        
+        trackableObj.coordScale = coordScale;
+    end
+    
+    function trackableObj = set.coordOrientation(trackableObj,coordOrientation)  %#ok<*MCHV2>
+        % Overloaded assignment operator function for the "coordOrientation" property.
+        %
+        % SYNTAX:
+        %   trackableObj.coordOrientation = coordOrientation
+        %
+        % INPUT:
+        %   coordOrientation - (1 x 1 quaternion)
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+        assert(isa(coordOrientation,'quaternion') && numel(coordOrientation) == 1,...
+            'trackable:trackable:set:coordOrientation',...
+            'Property "coordOrientation" must be set to a 1 x 1 quaternion.')
+        
+        trackableObj.coordOrientation = coordOrientation;
+    end
+    
     function trackableObj = set.tapeFlag(trackableObj,tapeFlag)  %#ok<*MCHV2>
         % Overloaded assignment operator function for the "tapeFlag" property.
         %
@@ -331,7 +374,7 @@ methods
             trackableObj.orientationRaw_ = orientation;
         end
         
-        trackableObj.orientationOffset_ = trackableObj.orientationRaw_ * conj(orientation);
+        trackableObj.orientationOffset_ = orientation' * trackableObj.orientationRaw_;
         
         if trackableObj.tapeFlag
             trackableObj.writeToTape();
@@ -386,7 +429,7 @@ methods
         %
         %-----------------------------------------------------------------------
         
-        orientation = trackableObj.orientationRaw_ * conj(trackableObj.orientationOffset_);
+        orientation = trackableObj.orientationRaw_ * trackableObj.orientationOffset_';
     end
     
     function transform = get.transform(trackableObj)
@@ -405,8 +448,7 @@ methods
         %-----------------------------------------------------------------------
         
         p = trackableObj.position;
-        q = trackableObj.orientation;
-        r = rot(q);
+        r = trackableObj.orientation.rot;
 
         transform = [r p;[zeros(1,3) 1]];
     end
@@ -566,6 +608,31 @@ methods (Access = public)
         trackableObj.port = port;
         trackableObj.validate();
         validServer = trackableObj.validServer;
+    end
+    
+    function resetTape(trackableObj)
+        % The "clearTape" method resets the tape records back to nothing.
+        %
+        % SYNTAX:
+        %   trackableObj.resetTape()
+        %
+        % INPUTS:
+        %   trackableObj - (1 x 1 trackable.trackable)
+        %       An instance of the "trackable.trackable" class.
+        %
+        % OUTPUTS:
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+        
+        trackableObj.tapeLength = 0;
+        trackableObj.timeTapeVec = nan(1,0);
+        trackableObj.positionTapeVec = nan(3,0);
+        trackableObj.orientationTapeVec = quaternion.empty(1,0);
+        trackableObj.velocityTapeVec = nan(3,0);
+        trackableObj.angularVelocityTapeVec = nan(3,0);
+        
     end
 end
 

@@ -82,27 +82,33 @@ timePrev = trackableObj.timeRaw_;
 posPrev = trackableObj.positionRaw_;
 oriPrev = trackableObj.orientationRaw_;
 
-if nargin == 1
+if nargin == 1 % Update with real data
     if trackableObj.validServer
         try
             trackableData = trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port);
             
             trackableObj.timeRaw_ = toc(trackableObj.ticID);
-            trackableObj.positionRaw_ = trackableData(1:3);
-            trackableObj.orientationRaw_ = quaternion(trackableData(4:7));
+            trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackableData(1:3));
+            trackableObj.orientationRaw_ = trackableObj.coordOrientation * (trackableObj.orientationGlobalCorrection_ * quaternion(trackableData(4:7))' * trackableObj.orientationLocalCorrection_);
             
             trackableObj.velocity = (trackableObj.positionRaw_ - posPrev) / (trackableObj.timeRaw_ - timePrev);
             
             trackableObj.validServer = true;
             
-        catch %#ok<CTCH>
+        catch exception
+            if strcmp(exception.identifier,'trackable:getTrackableData:noData')
             trackableObj.validServer = false;
             warning('trackable:trackable:update:validServer',...
                 'Properties were not updated because the server information is not valid or because the server is not broadcasting any valid data.')
+            else
+                rethrow(exception)
+            end
         end
+    else
+        trackableObj.validate();
     end
     
-else
+else % Update with simulation data
     trackableObj.timeRaw_ = timeRaw;
     trackableObj.positionRaw_ = positionRaw;
     trackableObj.orientationRaw_ = orientationRaw;
