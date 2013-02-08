@@ -85,6 +85,7 @@ oriPrev = trackableObj.orientationRaw_;
 if nargin == 1 % Update with real data
     if trackableObj.validServer
         try
+            trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
             trackableData = trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port);
             
             trackableObj.timeRaw_ = toc(trackableObj.ticID);
