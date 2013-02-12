@@ -42,6 +42,8 @@
 #include <string>
 #include "mex.h"
 #include "vrpn_Tracker.h"
+#include <iostream>
+
 //------------------------------------------------------------------------------
 
 
@@ -59,7 +61,7 @@ void VRPN_CALLBACK vrpn_tracker_callback(void*, const vrpn_TRACKERCB tracker);
 
 
 // Main mex function -----------------------------------------------------------
-void mexFunction( int nOutpus, mxArray *outputs[], int nInputs, const mxArray *inputs[] ) {  
+void mexFunction( int nOutpus, mxArray *outputs[], int nInputs, const mxArray *inputs[] ) {
     
     /* Check Inputs */
     // Check number of inputs
@@ -114,7 +116,9 @@ void mexFunction( int nOutpus, mxArray *outputs[], int nInputs, const mxArray *i
         }
         usleep(sleepTime);
     }
-    VRPNTracker->mainloop();   
+    VRPNTracker->mainloop();
+    
+    VRPNTracker->unregister_change_handler( NULL, vrpn_tracker_callback);
     
     // Output data
     trackableData[0] = position[0];
