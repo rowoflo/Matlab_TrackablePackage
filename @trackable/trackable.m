@@ -43,7 +43,7 @@ properties (SetAccess = private, GetAccess = protected, Hidden = true)
     settingFlag = false % (1 x l logical) Flag used to signal to other methods that properties time, position, orientation are in the process of being set.
 end
 
-properties (Access = private, Hidden = true)
+properties (Access = public, Hidden = true)
     timeRaw_ = nan % (1 x 1 number) Raw time data
     timeOffset_ = 0 % (1 x 1 number) Time offset
     positionRaw_ = nan(3,1) % (3 x 1 number) Raw position data
