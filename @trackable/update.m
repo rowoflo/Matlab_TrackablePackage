@@ -86,11 +86,23 @@ if nargin == 1 % Update with real data
     if trackableObj.validServer
         try
             trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
-            trackableData = trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port);
+            optiData = trackable.getTrackableData(trackableObj.device, trackableObj.host, trackableObj.port);
+            
+            x = optiData(1);
+            y = optiData(2);
+            z = optiData(3);
+            
+            i = optiData(4);
+            j = optiData(5);
+            k = optiData(6);
+            r = optiData(7);
+
+            trackablePos = trackableObj.orientationGlobalRotation_ * [x;y;z];
+            trackableQuat = (trackableObj.orientationGlobalRotation_ * quaternion([r i j k])) * trackableObj.orientationLocalRotation_';
             
             trackableObj.timeRaw_ = toc(trackableObj.ticID);
-            trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackableData(1:3));
-            trackableObj.orientationRaw_ = trackableObj.coordOrientation * (trackableObj.orientationGlobalCorrection_ * quaternion(trackableData(4:7))' * trackableObj.orientationLocalCorrection_);
+            trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackablePos);
+            trackableObj.orientationRaw_ = trackableObj.coordOrientation * trackableQuat;
             
             trackableObj.velocity = (trackableObj.positionRaw_ - posPrev) / (trackableObj.timeRaw_ - timePrev);
             

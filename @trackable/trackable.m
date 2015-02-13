@@ -50,8 +50,8 @@ properties (Access = public, Hidden = true)
     positionOffset_ = zeros(3,1) % (3 x 1 number) Position offset
     orientationRaw_ = quaternion(nan(4,1)) % (1 x 1 quaternion) Raw orientation data
     orientationOffset_ = quaternion([1;0;0;0]) % (1 x 1 quaternion) Orientation offset
-    orientationLocalCorrection_ = quaternion([0 0 1; 0 -1 0; 1 0 0]) % (1 x 1 quaternion) Used to realign local reference of trackable.
-    orientationGlobalCorrection_ = quaternion([0 0 1; 0 1 0; -1 0 0]) % (1 x 1 quaternion) Used to realign global of orientation reference frame with position refernce frame.
+    orientationLocalRotation_ = quaternion([1 0 0; 0 0 -1; 0 1 0]) % (1 x 1 quaternion) Transform from optitrack local reference frame to desired local reference frame.
+    orientationGlobalRotation_ = quaternion([1 0 0; 0 0 -1; 0 1 0]) % (1 x 1 quaternion) Transform from optitrack global reference frame to desired global reference frame.
 end
 
 properties (Dependent = true, SetAccess = public)
