@@ -73,7 +73,7 @@ if isempty(trackableObj.axisHandle) || ~ishghandle(trackableObj.axisHandle(axisN
     figure(trackableObj.figHandle);
     trackableObj.axisHandle(axisNum) = gca;
     cla(trackableObj.axisHandle(axisNum))
-    set(trackableObj.axisHandle(axisNum),'DrawMode','normal')
+%     set(trackableObj.axisHandle(axisNum),'DrawMode','normal')
 %     set(trackableObj.axisHandle(axisNum),'NextPlot','add')
     axis equal
 %     if ~isempty(trackableObj.sketchAxisProperties)

@@ -96,7 +96,7 @@ properties (Dependent = true, SetAccess = private)
 end
 
 properties (Dependent = true, SetAccess = private, Hidden = true)
-   tapeVecSize % (1 x 1 positive integer) % Actual size of tape vectors
+    tapeVecSize % (1 x 1 positive integer) % Actual size of tape vectors
 end
 
 properties (GetAccess = public, SetAccess = private, Hidden = true) 
