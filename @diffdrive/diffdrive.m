@@ -16,9 +16,9 @@ classdef diffdrive < trackable.trackable
 %
 % VERSION: 
 %   Created 13-FEB-2015
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
 
-%% Properties -------------------------------------------------------------
+%% Properties ------------------------------------------------------------------
 properties (Access = public)
     simulate = false % (1 x 1 logical) If true the simulator is run instead of the real robot.
     teleop = false % (1 x 1 logical) If true diffdrive is controled by joystick.
@@ -26,11 +26,18 @@ properties (Access = public)
     motor = zeros(2,1) % (2 x 1 motorLimits(1)<=integer<=motorLimits(2)) Current motor values for motor 1 and 2.
     wheelRadius = 0.01 % (1 x 1 positive number) [meters] Radius of robot wheel.
     wheelBase = 0.1 % (1 x 1 positive number) [meters] Wheel base length of robot.
+    speedFactor = 1; % (1 x 1 number) Conversion factor between wheel angular velocities and motor speeds
+    
+    controlMethod % (1 x 1 function pointer) Controller function pointer.
 end
 
-properties (GetAccess = public, SetAccess = private)
+properties (GetAccess = public, SetAccess = public)
     sampleTime = .1 % (1 x 1 positive number) Sampling time for robot.
     motorLimits = [-100 100] % (1 x 2 integers) Minimum and maximum motor values.
+end
+
+properties (Dependent = true, SetAccess = private)
+    inputTape % (1 x ? number) Recording of inputs.
 end
 
 properties (Access = public, Hidden = true)
@@ -44,7 +51,7 @@ properties (Access = private, Hidden = true)
     orientationSim_ = quaternion() % (1 x 1 quaternion) Raw orientation data
 end
 
-%% Constructor ------------------------------------------------------------
+%% Constructor -----------------------------------------------------------------
 methods
     function diffdriveObj = diffdrive(varargin)
         % Constructor function for the "diffdrive" class.
@@ -62,7 +69,7 @@ methods
         %
         % NOTES:
         %
-        %------------------------------------------------------------------
+        %-----------------------------------------------------------------------
         
         % Check number of arguments TODO: Add number argument check
         narginchk(0,3)
@@ -82,13 +89,13 @@ methods
         diffdriveObj.time = 0;
         diffdriveObj.position = [0 0 0]';
         diffdriveObj.orientation = quaternion([0;0;1],0);
-        
+        diffdriveObj.controlMethod = @diffdriveObj.diffMorphic;
         diffdriveObj.tapeFlag = true;
     end
 end
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
 
-%% Destructor -------------------------------------------------------------
+%% Destructor ------------------------------------------------------------------
 % methods (Access = public)
 %     function delete(diffdriveObj)
 %         % Destructor function for the "diffdriveObj" class.
@@ -102,13 +109,13 @@ end
 %         %
 %         % NOTES:
 %         %
-%         %------------------------------------------------------------------
+%         %-----------------------------------------------------------------------
 %         
 %     end
 % end
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
 
-%% Property Methods -------------------------------------------------------
+%% Property Methods ------------------------------------------------------------
 methods
     function diffdriveObj = set.motor(diffdriveObj,motor)
         % Overloaded assignment operator function for the "motor" property.
@@ -144,7 +151,7 @@ methods
 %         %
 %         % NOTES:
 %         %
-%         %------------------------------------------------------------------
+%         %-----------------------------------------------------------------------
 %         assert(isnumeric(prop1) && isreal(prop1) && isequal(size(prop1),[1,1]),...
 %             'trackable:diffdrive:set:prop1',...
 %             'Property "prop1" must be set to a 1 x 1 real number.')
@@ -163,63 +170,76 @@ methods
 %         %
 %         % NOTES:
 %         %
-%         %------------------------------------------------------------------
+%         %-----------------------------------------------------------------------
 % 
 %         prop1 = diffdriveObj.prop1;
 %     end
 end
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
 
 %% General Methods -------------------------------------------------------------
-% methods (Access = public)
-%     function diffdriveObj = method_name(diffdriveObj,arg1)
-%         % The "method_name" method ...
-%         %
-%         % SYNTAX:
-%         %   diffdriveObj = diffdriveObj.method_name(arg1)
-%         %
-%         % INPUTS:
-%         %   diffdriveObj - (1 x 1 trackable.diffdrive)
-%         %       An instance of the "trackable.diffdrive" class.
-%         %
-%         %   arg1 - (size type) [defaultArgumentValue] 
-%         %       Description.
-%         %
-%         % OUTPUTS:
-%         %   diffdriveObj - (1 x 1 trackable.diffdrive)
-%         %       An instance of the "trackable.diffdrive" class ... 
-%         %
-%         % NOTES:
-%         %
-%         %-----------------------------------------------------------------------
-% 
-%         % Check number of arguments
-%         narginchk(1,2)
-%         
-%         % Apply default values
-%         if nargin < 2, arg1 = 0; end
-%         
-%         % Check arguments for errors
-%         assert(isnumeric(arg1) && isreal(arg1) && isequal(size(arg1),[?,?]),...
-%             'trackable:diffdrive:method_name:arg1',...
-%             'Input argument "arg1" must be a ? x ? matrix of real numbers.')
-%         
-%     end
-%     
-% end
+methods (Access = public)
+    function motorValues = controller(diffdriveObj,setpoint)
+        % The "controller" method returns motor values for a given setpoint
+        % depending on the the current control method being used.
+        %
+        % SYNTAX:
+        %   motorValues = diffdriveObj.controller(setpoint)
+        %
+        % INPUTS:
+        %   diffdriveObj - (1 x 1 trackable.diffdrive)
+        %       An instance of the "trackable.diffdrive" class.
+        %
+        %   setpoint - (6 x 1 number) [zeros(6,1)] 
+        %       Setpoint for controller in the form:
+        %           [x; y; theta; vx; vy; omega].
+        %
+        % OUTPUTS:
+        %   motorValues - (2 x 1 number)
+        %       Motor values returned from the "controlMethod" limited to
+        %       the motor limit range.
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+
+        % Check number of arguments
+        narginchk(1,2)
+        
+        % Apply default values
+        if nargin < 2, setpoint = zeros(6,1); end
+        
+        % Check arguments for errors
+        assert(isnumeric(setpoint) && isreal(setpoint) && length(setpoint) == 6,...
+            'trackable:diffdrive:controller:setpoint',...
+            'Input argument "setpoint" must be a 6 x 1 vector of real numbers.')
+        setpoint = setpoint(:);
+
+        motorValues = diffdriveObj.controlMethod(setpoint);
+        motorValues = arrayfun(@ (val_) ...
+            min(max(val_,diffdriveObj.motorLimits(1)),diffdriveObj.motorLimits(2)), motorValues);
+        
+    end
+end
 %-------------------------------------------------------------------------------
 
 
-%% Methods in separte files -----------------------------------------------
+%% Methods in separte files ----------------------------------------------------
 methods (Access = public)
     update(diffdriveObj)
     
-    motorValues = teleoperation(diffdriveObj)
+    motorValues = linAngVel2motorValues(diffdriveObj,linVel,angVel)
+    [linVel,angVel] = motorValues2linAngVel(diffdriveObj,motorValues);
+    
+    % Controllers
+    motorValues = diffMorphic(diffdriveObj,setpoint)
+    motorValues = teleoperation(diffdriveObj,setpoint)
 end
+
 methods (Access = private)
     motorValues = setMoterValue(diffdriveObj,motorValues)
     [time,pos,ori] = simulator(diffdriveObj,timeStep,time,pos,ori)
 end
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
     
 end

@@ -84,36 +84,20 @@ assert(isnumeric(motor) && isreal(motor) && numel(motor) == 2,...
 motor = motor(:);
 
 %% Variables
-r = diffdriveObj.wheelRadius;
-l = diffdriveObj.wheelBase;
 
 %% Simulate one step forward
 if ~isnan(time)
     timePlus = time + timeStep;
-    [posPlus,oriPlus] = differentialDrive(time,timePlus,motor,pos,ori,r,l);
+    [v,w] = diffdriveObj.motorValues2linAngVel(motor);
+    xD = ori*[v;0;w];
+    theta = ori.yaw;
+    x = [pos(1:2);theta] + xD * timeStep;
+    posPlus = [x(1:2); pos(3)];
+    oriPlus = quaternion([0 0 x(3)]); 
 else
     timePlus = 0;
     posPlus = [0 0 0]';
     oriPlus = quaternion([0;0;1],0);
 end
-
-end
-
-%% Simulation Strategies --------------------------------------------------
-%#ok<*DEFNU>
-
-function [p1,o1] = differentialDrive(t0,t1,m0,p0,o0,r,l)
-% diffdrive acts like a differential drive robot
-% Use model from "Intro to Autonomous Mobile Robots" text book section 3.2.2 page 61
-
-R = @(theta_) [cos(theta_) -sin(theta_); sin(theta_) cos(theta_)];
-Rinv = rot(o0);
-theta = atan2(Rinv(2,1), Rinv(1,1));
-J = Rinv*[r/2 r/2; 0 0; r/(2*l) -r/(2*l)];
-xD = J*m0;
-
-x = [p0(1:2);theta] + (t1-t0) * xD;
-o1 = quaternion([R(x(3)) [0;0];0 0 1]);
-p1 = [x(1:2); p0(3)];
 
 end

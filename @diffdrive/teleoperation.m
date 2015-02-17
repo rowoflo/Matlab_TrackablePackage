@@ -1,16 +1,19 @@
-function motorValues = teleoperation(diffdriveObj)
-% The "teleoperation" method returns motor values based joystick input.
+function motorValues = teleoperation(diffdriveObj,~)
+% The "teleoperation" method returns motor values based on joystick input.
 %
 % SYNTAX:
-%   motorValues = diffdriveObj.teleoperation()
+%   motorValues = diffdriveObj.teleoperation(setpoint)
 %
 % INPUTS:
 %   diffdriveObj - (1 x 1 diffdrive)
 %       An instance of the "diffdrive" class.
 %
+%   setpoint - (6 x 1 number) 
+%       Setpoint for controller in the form: [x; y; theta; vx; vy; omega].
+%
 % OUTPUTS:
 %   motorValues - (2 x 1 integers)
-%       Motor values.
+%       Motor values [left; right].
 %
 % NOTES:
 %
@@ -23,11 +26,6 @@ function motorValues = teleoperation(diffdriveObj)
 % AUTHOR:
 %    Rowland O'Flaherty (www.rowlandoflaherty.com) 13-FEB-2015
 %-------------------------------------------------------------------------------
-
-%% Check Input Arguments
-
-% Check number of arguments
-narginchk(1,1)
 
 %% Variables
 mLim = diffdriveObj.motorLimits;

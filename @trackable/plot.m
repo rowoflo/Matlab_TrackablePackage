@@ -75,26 +75,29 @@ if isempty(trackableObj.axisHandle) || ~ishghandle(trackableObj.axisHandle(axisN
     cla(trackableObj.axisHandle(axisNum))
 %     set(trackableObj.axisHandle(axisNum),'DrawMode','normal')
 %     set(trackableObj.axisHandle(axisNum),'NextPlot','add')
-    axis equal
-%     if ~isempty(trackableObj.sketchAxisProperties)
-%         set(trackableObj.axisHandle(axisNum),trackableObj.sketchAxisProperties{:});
-%     end
+    axis(trackableObj.axisHandle(axisNum),equal)
+    
+    xlim(trackableObj.axisHandle(axisNum),1/2*[-plotSize,plotSize])
+    ylim(trackableObj.axisHandle(axisNum),1/2*[-plotSize,plotSize])
+    zlim(trackableObj.axisHandle(axisNum),[0,plotSize])
+    grid(trackableObj.axisHandle(axisNum),'on')
+else
+%     XLim = get(trackableObj.axisHandle(axisNum),'XLim');
+%     YLim = get(trackableObj.axisHandle(axisNum),'YLim');
+%     plotSize = 
 end
 title(trackableObj.axisHandle(axisNum),[trackableObj.device ' (Time = ' num2str(t,'%.1f') ')'])
 
 %% Plot
 
-% Initialial plot
-if isempty(trackableObj.graphicsHandles) || all(~ishghandle(trackableObj.graphicsHandles))
-    % Set properties
-    xlim(trackableObj.axisHandle(axisNum),1/2*[-plotSize,plotSize])
-    ylim(trackableObj.axisHandle(axisNum),1/2*[-plotSize,plotSize])
-    zlim(trackableObj.axisHandle(axisNum),[0,plotSize])
-    grid(trackableObj.axisHandle(axisNum),'on')
-    
-    % Create static objects
-    
-end
+% Initialize plot
+% if isempty(trackableObj.graphicsHandles) || all(~ishghandle(trackableObj.graphicsHandles))
+%     % Set properties
+%     
+%     
+%     % Create static objects
+%     
+% end
 
 % Update plot
 if isempty(trackableObj.graphicsHandles) || ...
@@ -157,16 +160,16 @@ else
         'ZData',trackableObj.positionTape(3,:));
     end
     
-    % Recenter plot
-    XLim = get(trackableObj.axisHandle(axisNum),'XLim');
-    YLim = get(trackableObj.axisHandle(axisNum),'YLim');
-    if H(1,4) <= XLim(1) + 1 || H(1,4) >= XLim(2) - 1 || ...
-        H(2,4) <= YLim(1) + 1 || H(2,4) >= YLim(2) - 1
-    
-        set(trackableObj.axisHandle(axisNum),...
-            'XLim',H(1,4)+1/2*[-plotSize,plotSize],...
-            'YLim',H(2,4)+1/2*[-plotSize,plotSize]);
-    end
+%     % Recenter plot
+%     XLim = get(trackableObj.axisHandle(axisNum),'XLim');
+%     YLim = get(trackableObj.axisHandle(axisNum),'YLim');
+%     if H(1,4) <= XLim(1) + 1 || H(1,4) >= XLim(2) - 1 || ...
+%         H(2,4) <= YLim(1) + 1 || H(2,4) >= YLim(2) - 1
+%     
+%         set(trackableObj.axisHandle(axisNum),...
+%             'XLim',H(1,4)+1/2*[-plotSize,plotSize],...
+%             'YLim',H(2,4)+1/2*[-plotSize,plotSize]);
+%     end
         
 
 end

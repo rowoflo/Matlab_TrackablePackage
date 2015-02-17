@@ -49,9 +49,5 @@ else
     end
 end
 
-if diffdriveObj.teleop    
-    diffdriveObj.motor = diffdriveObj.teleoperation;
-end
-
 
 end
