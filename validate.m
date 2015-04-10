@@ -1,18 +1,18 @@
-function validServer = validate(device,host,port)
+function validServer = validate(name,host,port)
 % The "validate" function is used to validate the server information and
 % that it is producing data.
 %
 % SYNTAX:
-%   validServer = validate(device,host,port)
+%   validServer = validate(name,host,port)
 % 
 % INPUTS:
-%   device - (string)
-%       Trackable device name.
+%   name - (string)
+%       Trackable name name.
 %
 %   host - (string)
 %       Server computer host name.
 %
-%   port - (string)
+%   port - (string) ['3883']
 %       Server port number.
 %
 % OUTPUTS:
@@ -38,15 +38,11 @@ function validServer = validate(device,host,port)
 %-------------------------------------------------------------------------------
 
 %% Check Inputs
+if nargin < 3; port = '3883'; end;
 validServer = false;
 
-% Check number of inputs
-if nargin ~= 3
-    return
-end
-
 % Check input arguments for errors
-if ~(~isempty(device) && ischar(device))
+if ~(~isempty(name) && ischar(name))
     return
 end
 
@@ -60,7 +56,7 @@ end
 
 %% Validate
 try
-    trackable.getTrackableData(device, host, port);
+    trackable.getTrackableData(name, host, port);
 catch %#ok<CTCH>
     return
 end
