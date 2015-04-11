@@ -23,6 +23,10 @@ function validate(trackableObj)
 %-------------------------------------------------------------------------------
 
 %% Validate
-trackableObj.validServer = trackable.validate(trackableObj.name,trackableObj.host,trackableObj.port);
+if trackableObj.simulate
+    trackableObj.validServer = true;
+else
+    trackableObj.validServer = trackable.validate(trackableObj.name,trackableObj.host,trackableObj.port);
+end
 
 end

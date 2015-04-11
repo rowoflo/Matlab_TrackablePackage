@@ -16,8 +16,8 @@
 // OUTPUTS:
 //  trackableData - (7 x 1 number) 
 //      Data vector holding position and orientation information. Position
-//      cartesian X,Y,Z components are in trackableData(1:3) and orientation
-//      quaterion A,B,C,D components are in trackableData(4:7).
+//      cartesian x,y,z components are in trackableData(1:3) and orientation
+//      quaterion i,j,k,r components are in trackableData(4:7).
 //
 // EXAMPLES:
 //  trackableData = getTrackableData('BrushBot','192.168.1.145','3883')
@@ -25,24 +25,29 @@
 // NOTES:
 //
 // NECESSARY FILES:
+//  VRPN Library (https://github.com/vrpn/vrpn):
+//      Mac OS X Install:
+//      >> brew install vrpn
 //
 // SEE ALSO:
 //
 // COMPLILE COMMANDS:
-//  mex -I/Applications/vrpn -L/Applications/vrpn/universal_macosx -lvrpn -lvrpnserver getTrackableData.cpp
+//  Mac O
+//  mex -I/usr/local/Cellar/vrpn/07.33/include -L/usr/local/Cellar/vrpn/07.33/lib -lvrpn -lvrpnserver getTrackableData.cpp
 //
 // AUTHOR:
-//    Rowland O'Flaherty (www.rowlandoflaherty.com)
+//    Rowland O'Flahery (http://rowlandoflaherty.com)
 //
 // VERSION: 
 //   Created 24-OCT-2012
 //------------------------------------------------------------------------------
 
 // Includes --------------------------------------------------------------------
-#include <string>
 #include "mex.h"
 #include "vrpn_Tracker.h"
+#include <string>
 #include <iostream>
+#include <unistd.h>
 
 //------------------------------------------------------------------------------
 
@@ -127,8 +132,7 @@ void mexFunction( int nOutpus, mxArray *outputs[], int nInputs, const mxArray *i
     trackableData[3] = orientation[0];
     trackableData[4] = orientation[1];
     trackableData[5] = orientation[2];
-    trackableData[6] = orientation[3];
-    
+    trackableData[6] = orientation[3];    
 }
 //------------------------------------------------------------------------------
 

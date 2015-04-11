@@ -25,40 +25,46 @@ function update(trackableObj)
 
 %% Update
 
-if trackableObj.validServer
-    try
-        trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
-        optiData = trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port);
-        
-        x = optiData(1);
-        y = optiData(2);
-        z = optiData(3);
-        
-        i = optiData(4);
-        j = optiData(5);
-        k = optiData(6);
-        r = optiData(7);
-        
-        trackablePos = trackableObj.orientationGlobalRotation_ * [x;y;z];
-        trackableQuat = (trackableObj.orientationGlobalRotation_ * quaternion([r i j k])) * trackableObj.orientationLocalRotation_';
-        
-        trackableObj.timeRaw_ = toc(trackableObj.ticID);
-        trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackablePos);
-        trackableObj.orientationRaw_ = trackableObj.coordOrientation * trackableQuat;
-        
-        trackableObj.validServer = true;
-        
-    catch exception
-        if strcmp(exception.identifier,'trackable:getTrackableData:noData')
-            trackableObj.validServer = false;
-            warning('trackable:trackable:update:validServer',...
-                'Properties were not updated because the server information is not valid or because the server is not broadcasting any valid data.')
-        else
-            rethrow(exception)
-        end
-    end
+if trackableObj.simulate
+    [pos,ori] = trackableObj.simUpdateHandle(trackableObj);
+    trackableObj.position = pos;
+    trackableObj.orientation = ori;
+    trackableObj.time = trackableObj.time + trackableObj.simTimeStep;
 else
-    trackableObj.validate();
+    if trackableObj.validServer
+        try
+            %         trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
+            optiData = trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port);
+            
+            x = optiData(1);
+            y = optiData(2);
+            z = optiData(3);
+            
+            i = optiData(4);
+            j = optiData(5);
+            k = optiData(6);
+            r = optiData(7);
+            
+            trackablePos = trackableObj.orientationGlobalRotation_ * [x;y;z];
+            trackableQuat = (trackableObj.orientationGlobalRotation_ * quaternion([r i j k])) * trackableObj.orientationLocalRotation_';
+            
+            trackableObj.timeRaw_ = toc(trackableObj.ticID);
+            trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackablePos);
+            trackableObj.orientationRaw_ = trackableObj.coordOrientation * trackableQuat;
+            
+            trackableObj.validServer = true;
+            
+        catch exception
+            if strcmp(exception.identifier,'trackable:getTrackableData:noData')
+                trackableObj.validServer = false;
+                warning('trackable:trackable:update:validServer',...
+                    'Properties were not updated because the server information is not valid or because the server is not broadcasting any valid data.')
+            else
+                rethrow(exception)
+            end
+        end
+    else
+        trackableObj.validate();
+    end
 end
-
 end

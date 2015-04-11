@@ -25,8 +25,13 @@ properties (GetAccess = public, SetAccess = private)
     name % (string) Trackable name name
     host % (string) Server computer host/host name
     port = '3883'; % (string) Server port number
-    
     validServer = false % (1 x 1 logical) True if the server connection is valid
+    simulate = true; % (1 x 1 logical) If true runs in simulation.
+    simTimeStep = .1; % (1 x 1 positive number) Time step used in simulation.
+end
+
+properties (Access = public)
+    simUpdateHandle % (function handle) Function handle for trackable simulation update
 end
 
 properties (Access = protected)
@@ -41,7 +46,7 @@ properties (Access = public, Hidden = true)
     orientationRaw_ = quaternion(nan(4,1)) % (1 x 1 quaternion) Raw orientation data
     orientationOffset_ = quaternion([1;0;0;0]) % (1 x 1 quaternion) Orientation offset
     
-    % Set to fix optitracks reference frame where Y is up to having Z up.
+    % Set to fix optitracks reference frame where Y is up to having Z as up.
     orientationLocalRotation_ = quaternion([1 0 0; 0 0 -1; 0 1 0]) % (1 x 1 quaternion) Transform from optitrack local reference frame to desired local reference frame.
     orientationGlobalRotation_ = quaternion([1 0 0; 0 0 -1; 0 1 0]) % (1 x 1 quaternion) Transform from optitrack global reference frame to desired global reference frame.
 end
@@ -99,6 +104,7 @@ methods
         % Assign properties
         trackableObj.name = name;
         trackableObj.host = host;
+        trackableObj.simUpdateHandle = @(trackableObj_) trackableObj.simUpdate;
         
         % For GRITS Lab: This rotates the reference frame to 
 %         trackableObj.orientationGlobalRotation_ = quaternion([0 0 pi])' * T.orientationGlobalRotation_;
@@ -167,6 +173,25 @@ methods
         trackableObj.coordOrientation = coordOrientation;
     end
     
+    function set.simTimeStep(trackableObj,simTimeStep)
+        % Overloaded assignment operator function for the "simTimeStep" property.
+        %
+        % SYNTAX:
+        %   trackableObj.simTimeStep = simTimeStep
+        %
+        % INPUT:
+        %   simTimeStep - (1 x 1 positve number)
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+        assert(isnumeric(simTimeStep) && isreal(simTimeStep) && numel(simTimeStep) == 1 && simTimeStep >= 0,...
+            'trackable:trackable:set:simTimeStep',...
+            'Property "simTimeStep" must be set to a 1 x 1 positive number.')
+        
+        trackableObj.simTimeStep = simTimeStep;
+    end
+    
     function set.time(trackableObj,time) 
         % Overloaded assignment operator function for the "time" property.
         %
@@ -183,7 +208,9 @@ methods
             'trackable:trackable:set:time',...
             'Property "time" must be set to a 1 x 1 real number.')
         
-        trackableObj.update();
+        if ~trackableObj.simulate
+            trackableObj.update();
+        end
         
         if isnan(trackableObj.timeRaw_)
             trackableObj.timeRaw_ = time;
@@ -208,7 +235,9 @@ methods
             'Property "position" must be set to a 3 x 1 real number.')
         position = position(:);
 
-        trackableObj.update();
+        if ~trackableObj.simulate
+            trackableObj.update();
+        end
         
         if any(isnan(trackableObj.positionRaw_))
             trackableObj.positionRaw_ = position;
@@ -245,7 +274,9 @@ methods
             orientation = quaternion(orientation);
         end
         
-        trackableObj.update();
+        if ~trackableObj.simulate
+            trackableObj.update();
+        end
         
         if isnan(trackableObj.orientationRaw_)
             trackableObj.orientationRaw_ = orientation;
@@ -290,13 +321,21 @@ methods (Access = public)
         % NOTES:
         %
         %-----------------------------------------------------------------------
-
-        trackableObj.ticID = tic;        
-        trackableObj.validate();
-        if trackableObj.validServer
-            trackableObj.update();
+    
+        result = true;
+        if trackableObj.simulate
+            trackableObj.time = 0;
+            [pos,ori] = trackableObj.simUpdateHandle(trackableObj);
+            trackableObj.position = pos;
+            trackableObj.orientation = ori;
+        else
+            trackableObj.ticID = tic;
+            trackableObj.validate();
+            if trackableObj.validServer
+                trackableObj.update();
+            end
+            result = trackableObj.validServer;
         end
-        result = trackableObj.validServer;
     end
     
     function validServer = setServerInfo(trackableObj,name,host,port)
@@ -348,6 +387,42 @@ methods (Access = public)
         trackableObj.port = port;
         trackableObj.validate();
         validServer = trackableObj.validServer;
+    end
+    
+    function [pos,ori] = simUpdate(trackableObj)
+        % The "simUpdate" method updates the trackable position and
+        % orientation when in simulation.
+        %
+        % SYNTAX:
+        %   [pos,ori] = trackableObj.simUpdate()
+        %
+        % INPUTS:
+        %   trackableObj - (1 x 1 trackable.trackable)
+        %       An instance of the "trackable.trackable" class.
+        %
+        % OUTPUTS:
+        %   pos - (3 x 1 number)
+        %       Updated position.
+        %
+        %   ori - (1 x 1 quaternion or 4 x 1 real number with the norm equal to 1)
+        %       Updated orientation.
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+
+        % Check number of arguments
+        narginchk(1,1)
+        if any(isnan(trackableObj.position))
+            trackableObj.positionRaw_ = position;
+        else
+            pos = [0;0;0];
+        end
+        if isnan(trackableObj.orientation)
+            ori = [1;0;0;0];
+        else
+            ori = trackableObj.orientation;
+        end
     end
 end
 %-------------------------------------------------------------------------------
