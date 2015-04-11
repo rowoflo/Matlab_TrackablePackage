@@ -389,6 +389,50 @@ methods (Access = public)
         validServer = trackableObj.validServer;
     end
     
+    function rotateGlobal(trackableObj,rotation)
+        % The "rotateGlobal" method rotates the global referecen frame of
+        % the trackable.
+        %
+        % SYNTAX:
+        %   trackableObj.rotateGlobal(rotation)
+        %
+        % INPUTS:
+        %   trackableObj - (1 x 1 trackable.trackable)
+        %       An instance of the "trackable.trackable" class.
+        %
+        %   rotation - (1 x 1 quaternion or 4 x 1 real number with the norm equal to 1)
+        %       Rotation quaternion.
+        %
+        % EXAMPLES:
+        %   % Rotate 90 degrees around global frame Z-axis;
+        %   trackableObj.rotateGlobal(quaternion([0 0 pi/2]));
+        %
+        % NOTES:
+        %
+        %-----------------------------------------------------------------------
+
+        % Check number of arguments
+        narginchk(2,2)
+        
+        % Check arguments for errors
+        assert((isa(rotation,'quaternion') && numel(rotation) == 1 ) || ...
+            (isnumeric(rotation) && isreal(rotation) && numel(rotation) == 4),...
+            'trackable:rotateGlobal:rotation',...
+            'Property "rotation" must be a 1 x 1 quaternion or a 4 x 1 real number.')
+        
+        if ~isa(rotation,'quaternion')
+            rotation = rotation(:);
+            if abs(norm(rotation) - 1) > .01;
+                warning('trackable:rotateGlobal:rotation',...
+                    'Property "rotation" norm is not very close to 1. (Norm = %.3f)',norm(rotation))
+            end
+            rotation = rotation / norm(rotation);
+            rotation = quaternion(rotation);
+        end
+        
+        trackableObj.orientationGlobalRotation_ = rotation' * trackableObj.orientationGlobalRotation_;
+    end
+    
     function [pos,ori] = simUpdate(trackableObj)
         % The "simUpdate" method updates the trackable position and
         % orientation when in simulation.
