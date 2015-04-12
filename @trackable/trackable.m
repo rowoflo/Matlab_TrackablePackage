@@ -55,6 +55,12 @@ properties (Dependent = true, SetAccess = public)
     time % (1 x 1 number) Current time
     position % (3 x 1 number) Current position [Cartesian (x,y,z)]
     orientation % (1 x 1 quaternion) Current orientation
+    x % (1 x 1 number) x position.
+    y % (1 x 1 number) y position.
+    z % (1 x 1 number) z position.
+    roll % (1 x 1 number) roll angle.
+    pitch % (1 x 1 number) pitch angle.
+    yaw % (1 x 1 number) yaw angle.
 end
 
 properties (Access = public)
@@ -192,6 +198,10 @@ methods
         trackableObj.simTimeStep = simTimeStep;
     end
     
+    function time = get.time(trackableObj)
+        time = trackableObj.timeRaw_ - trackableObj.timeOffset_;
+    end
+
     function set.time(trackableObj,time) 
         % Overloaded assignment operator function for the "time" property.
         %
@@ -216,6 +226,10 @@ methods
             trackableObj.timeRaw_ = time;
         end
         trackableObj.timeOffset_ = trackableObj.timeRaw_ - time;
+    end
+    
+    function position = get.position(trackableObj)
+        position = trackableObj.positionRaw_ - trackableObj.positionOffset_;
     end
     
     function set.position(trackableObj,position) 
@@ -245,7 +259,35 @@ methods
         trackableObj.positionOffset_ = trackableObj.positionRaw_ - position;
     end
     
-    function set.orientation(trackableObj,orientation) 
+    function x = get.x(trackableObj)
+        x = trackableObj.position(1);
+    end
+    
+    function set.x(trackableObj,x)
+        trackableObj.position(1) = x;
+    end
+    
+    function y = get.y(trackableObj)
+        y = trackableObj.position(2);
+    end
+    
+    function set.y(trackableObj,y)
+        trackableObj.position(2) = y;
+    end
+    
+    function z = get.z(trackableObj)
+        z = trackableObj.position(3);
+    end
+    
+    function set.z(trackableObj,z)
+        trackableObj.position(3) = z;
+    end
+    
+    function orientation = get.orientation(trackableObj)
+        orientation = trackableObj.orientationRaw_ * trackableObj.orientationOffset_';
+    end
+    
+    function set.orientation(trackableObj,orientation)
         % Overloaded assignment operator function for the "orientation" property.
         %
         % SYNTAX:
@@ -286,18 +328,29 @@ methods
         
     end
     
-   function time = get.time(trackableObj)
-        time = trackableObj.timeRaw_ - trackableObj.timeOffset_;
-    end
-
-    function position = get.position(trackableObj)
-        position = trackableObj.positionRaw_ - trackableObj.positionOffset_;
+    function set.roll(trackableObj,roll)
+        trackableObj.orientation.roll = roll;
     end
     
-    function orientation = get.orientation(trackableObj)       
-        orientation = trackableObj.orientationRaw_ * trackableObj.orientationOffset_';
+    function roll = get.roll(botObj)
+        roll = botObj.orientation.roll;
     end
     
+    function set.pitch(trackableObj,pitch)
+        trackableObj.orientation.pitch = pitch;
+    end
+    
+    function pitch = get.pitch(botObj)
+        pitch = botObj.orientation.pitch;
+    end
+    
+    function set.yaw(trackableObj,yaw)
+        trackableObj.orientation.yaw = yaw;
+    end
+    
+    function yaw = get.yaw(trackableObj)
+        yaw = trackableObj.orientation.yaw;
+    end
 
 end
 %-------------------------------------------------------------------------------
@@ -326,6 +379,12 @@ methods (Access = public)
         if trackableObj.simulate
             trackableObj.time = 0;
             [pos,ori] = trackableObj.simUpdateHandle(trackableObj);
+            if any(isnan(pos))
+                pos = [0 0 0]';
+            end
+            if any(isnan(ori))
+                ori = [1 0 0 0];
+            end
             trackableObj.position = pos;
             trackableObj.orientation = ori;
         else
