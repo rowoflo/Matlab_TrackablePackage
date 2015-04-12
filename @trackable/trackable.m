@@ -70,13 +70,16 @@ end
 
 %% Constructor -----------------------------------------------------------------
 methods
-    function trackableObj = trackable(name,host)
+    function trackableObj = trackable(simulate,name,host)
         % Constructor function for the "trackable" class.
         %
         % SYNTAX:
-        %   trackableObj = trackable(name,host,port)
+        %   trackableObj = trackable(simulate,name,host)
         %
         % INPUTS:
+        %   simulate - (1 x 1 logical) [true]
+        %       Sets the "simulate" property.
+        %
         %   name - (string) [''] 
         %       Sets the "trackableObj.name" property.
         %
@@ -92,11 +95,12 @@ methods
         %-----------------------------------------------------------------------
         
         % Check number of arguments
-        narginchk(2,2)
+        narginchk(3,3)
 
         % Apply default values
-        if nargin < 1, name = ''; end
-        if nargin < 2, host = ''; end
+        if nargin < 1, simulate = true; end;
+        if nargin < 2, name = ''; end
+        if nargin < 3, host = ''; end
 
         % Check input arguments for errors
         assert(ischar(name),...
@@ -108,12 +112,10 @@ methods
             'Input argument "host" must be a string.')
 
         % Assign properties
+        trackableObj.simulate = simulate;
         trackableObj.name = name;
         trackableObj.host = host;
-        trackableObj.simUpdateHandle = @(trackableObj_) trackableObj.simUpdate;
-        
-        % For GRITS Lab: This rotates the reference frame to 
-%         trackableObj.orientationGlobalRotation_ = quaternion([0 0 pi])' * T.orientationGlobalRotation_;
+        trackableObj.simUpdateHandle = @(trackableObj_) trackableObj_.simUpdate;
     end
 end
 %-------------------------------------------------------------------------------
@@ -177,6 +179,13 @@ methods
             'Property "coordOrientation" must be set to a 1 x 1 quaternion.')
         
         trackableObj.coordOrientation = coordOrientation;
+    end
+    
+    function set.simulate(trackableObj,simulate)
+        assert(islogical(simulate) && numel(simulate) == 1,...
+            'trackable:trackable:set:simulate',...
+            'Property "simulate" must be set to a 1 x 1 logical.')
+        trackableObj.simulate = simulate;
     end
     
     function set.simTimeStep(trackableObj,simTimeStep)
@@ -517,9 +526,9 @@ methods (Access = public)
         % Check number of arguments
         narginchk(1,1)
         if any(isnan(trackableObj.position))
-            trackableObj.positionRaw_ = position;
-        else
             pos = [0;0;0];
+        else
+            pos = trackableObj.position;
         end
         if isnan(trackableObj.orientation)
             ori = [1;0;0;0];
