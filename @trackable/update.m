@@ -46,7 +46,7 @@ else
             r = optiData(7);
             
             trackablePos = trackableObj.orientationGlobalRotation_ * [x;y;z];
-            trackableQuat = (trackableObj.orientationGlobalRotation_ * quaternion([r i j k])) * trackableObj.orientationLocalRotation_';
+            trackableQuat = (trackableObj.orientationGlobalRotation_' * quaternion([r i j k])) * trackableObj.orientationLocalRotation_;
             
             trackableObj.timeRaw_ = toc(trackableObj.ticID);
             trackableObj.positionRaw_ = trackableObj.coordOrientation.rot * (trackableObj.coordScale .* trackablePos);
