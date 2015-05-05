@@ -81,10 +81,11 @@ methods
         %       Sets the "simulate" property.
         %
         %   name - (string) [''] 
-        %       Sets the "trackableObj.name" property.
+        %       Name of optitrack object in motive software. Example 'K1'.
         %
         %   host - (string) [''] 
-        %       Sets the "trackableObj.host" property.
+        %       Host or IP address of computer running motive software.
+        %       Example '192.168.2.145'.
         %
         % OUTPUTS:
         %   trackableObj - (1 x 1 trackable object) 
