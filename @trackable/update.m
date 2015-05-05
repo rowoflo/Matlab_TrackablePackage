@@ -33,7 +33,7 @@ if trackableObj.simulate
 else
     if trackableObj.validServer
         try
-            %         trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
+            trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port); % FIXME: Needs to be fixed. Currently takes two updates to get data.
             optiData = trackable.getTrackableData(trackableObj.name, trackableObj.host, trackableObj.port);
             
             x = optiData(1);
