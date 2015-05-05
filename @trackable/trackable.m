@@ -52,15 +52,16 @@ properties (Access = public, Hidden = true)
 end
 
 properties (Dependent = true, SetAccess = public)
-    time % (1 x 1 number) Current time
-    position % (3 x 1 number) Current position [Cartesian (x,y,z)]
+    time % (1 x 1 number) [s] Current time
+    position % (3 x 1 number) [m] Current position [Cartesian (x,y,z)]
     orientation % (1 x 1 quaternion) Current orientation
-    x % (1 x 1 number) x position.
-    y % (1 x 1 number) y position.
-    z % (1 x 1 number) z position.
-    roll % (1 x 1 number) roll angle.
-    pitch % (1 x 1 number) pitch angle.
-    yaw % (1 x 1 number) yaw angle.
+    x % (1 x 1 number) [m] x position.
+    y % (1 x 1 number) [m] y position.
+    z % (1 x 1 number) [m] z position.
+    theta % (1 x 1 number) [rad] theta angle ((ENU) angle around z-axis from x-axis).
+    roll % (1 x 1 number) [rad] roll angle ((NED) angle around x-axis).
+    pitch % (1 x 1 number) [rad] pitch angle ((NED) angle around y-axis).
+    yaw % (1 x 1 number) [rad] yaw angle ((NED) angle around z-axis).
 end
 
 properties (Access = public)
@@ -338,20 +339,28 @@ methods
         
     end
     
+    function set.theta(trackableObj,theta)
+        trackableObj.orientation.yaw = -theta;
+    end
+    
+    function theta = get.theta(trackableObj)
+        theta = -trackableObj.orientation.yaw;
+    end
+    
     function set.roll(trackableObj,roll)
         trackableObj.orientation.roll = roll;
     end
     
-    function roll = get.roll(botObj)
-        roll = botObj.orientation.roll;
+    function roll = get.roll(trackableObj)
+        roll = trackableObj.orientation.roll;
     end
     
     function set.pitch(trackableObj,pitch)
         trackableObj.orientation.pitch = pitch;
     end
     
-    function pitch = get.pitch(botObj)
-        pitch = botObj.orientation.pitch;
+    function pitch = get.pitch(trackableObj)
+        pitch = trackableObj.orientation.pitch;
     end
     
     function set.yaw(trackableObj,yaw)
